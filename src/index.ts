@@ -1,4 +1,5 @@
-/* CSCI 4262 Assignment 3,
+/* Code setup from
+ * CSCI 4262 Assignment 3,
  * Author: Evan Suma Rosenberg
  * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
  */ 
@@ -95,7 +96,9 @@ class Game
             this.onControllerRemoved(controller);
         });
 
-        // Add code to create your scene here
+        // The scene 
+
+        var light = new HemisphericLight("light", new Vector3(0, 0, 0), this.scene);
 
         //Asset manager
         var assets = new AssetsManager(this.scene);
@@ -106,7 +109,7 @@ class Game
         var skyMaterial = new StandardMaterial("sky", this.scene);
         skyMaterial.backFaceCulling = false;
         skyMaterial.disableLighting = true;
-        var skyTexture = new CubeTexture("textures/skybox/sky", this.scene);
+        var skyTexture = new CubeTexture("assets/skybox/skybox", this.scene);
         skyTexture.coordinatesMode = Texture.SKYBOX_MODE;
         skyMaterial.reflectionTexture = skyTexture;
         skybox.material =  skyMaterial;
