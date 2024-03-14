@@ -1,6 +1,5 @@
-/* CSCI 4262 Assignment 3,
- * Author: Evan Suma Rosenberg
- * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+/* CSCI 4262 Mile stone 2
+ * Author:  Jett Wolfe, Rui Zeng
  */ 
 
 import { Engine } from "@babylonjs/core/Engines/engine";
@@ -15,39 +14,50 @@ import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader"
 import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector"
-import { AbstractMesh, AssetsManager, CubeTexture, DebugLayer, HemisphericLight, HighlightLayer, Mesh, MeshBuilder, SceneLoader, StandardMaterial, Texture } from "@babylonjs/core";
-import { Inspector } from "@babylonjs/inspector";
+import "@babylonjs/core/Physics/physicsEngineComponent"
+import * as Cannon from "cannon"
+import { AbstractMesh, AssetsManager, CannonJSPlugin, CubeTexture, DirectionalLight, HemisphericLight, HighlightLayer, Logger, Mesh, MeshBuilder, PhysicsImpostor, StandardMaterial, Texture } from "@babylonjs/core";
 
 
-// Note: The structure has changed since previous assignments because we need to handle the 
-// async methods used for setting up XR. In particular, "createDefaultXRExperienceAsync" 
-// needs to load models and create various things.  So, the function returns a promise, 
-// which allows you to do other things while it runs.  Because we don't want to continue
-// executing until it finishes, we use "await" to wait for the promise to finish. However,
-// await can only run inside async functions. https://javascript.info/async-await
 class Game 
 { 
     private canvas: HTMLCanvasElement;
     private engine: Engine;
     private scene: Scene;
 
+
+    private rightGrabbedObject: AbstractMesh | null;
+    private grabbableObjects: Array<AbstractMesh>;
+    private hl_red: HighlightLayer;
+    private hl_green: HighlightLayer;
+    private currentMesh: AbstractMesh | null; 
     constructor()
     {
         // Get the canvas element 
         this.canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
 
         // Generate the BABYLON 3D engine
-        this.engine = new Engine(this.canvas, true, {stencil:true}); 
+        this.engine = new Engine(this.canvas, true); 
 
         // Creates a basic Babylon Scene object
         this.scene = new Scene(this.engine);   
+
+        //initial controller with grab function
+  
+        this.rightGrabbedObject = null;
+        this.grabbableObjects = [];
+        this.hl_red = new HighlightLayer("hlr",this.scene);
+        this.hl_green = new HighlightLayer("hlg",this.scene);
+        this.currentMesh = null;
     }
 
+    
     start() : void
     {
         this.createScene().then(() => {
             // Register a render loop to repeatedly render the scene
             this.engine.runRenderLoop(() => { 
+                //this.update();
                 this.scene.render();
             });
 
@@ -61,9 +71,8 @@ class Game
     private async createScene()
     {
         // This creates and positions a first-person camera (non-mesh)
-        var camera = new UniversalCamera("camera1", new Vector3(0, 1, 0), this.scene);
+        var camera = new UniversalCamera("camera1", new Vector3(0, 1.6, 0), this.scene);
         camera.fov = 90 * Math.PI / 180;
-        
 
         // This attaches the camera to the canvas
         camera.attachControl(this.canvas, true);
@@ -95,30 +104,84 @@ class Game
             this.onControllerRemoved(controller);
         });
 
-        // Add code to create your scene here
+    // Add code to create your scene here
+       
+        //create a ground
+        const environment = this.scene.createDefaultEnvironment({
+            createGround: true,
+            groundSize: 200,
+            skyboxSize: 0
+            //skyboxColor: new Color3(0.059, 0.663, 0.8)
+        });
+        
+        //physics
+        this.scene.enablePhysics(new Vector3(0,-8,0), new CannonJSPlugin(undefined,undefined, Cannon));
+        
+        //ground teleportation
+        xrHelper.teleportation.addFloorMesh(environment!.ground!);
+        environment!.ground!.isVisible = false;
+        environment!.ground!.position = new Vector3(0,0.2,0);
+        environment!.ground!.physicsImpostor = new PhysicsImpostor(environment!.ground!, PhysicsImpostor.BoxImpostor,
+            {mass:0, friction: 0.5, restitution: 0.7, ignoreParent: true},this.scene);
 
-        //Asset manager
-        var assets = new AssetsManager(this.scene);
 
-        //Skybox
-        var skybox = MeshBuilder.CreateBox("sky", {size: 100}, this.scene);
-        skybox.scaling = new Vector3(100, 100, 100);
+        //create lights
+        var light = new HemisphericLight("light", new Vector3(0,1,0),this.scene);
+        light.intensity = 0.5;
+
+        var sun = new DirectionalLight("theSun", new Vector3(0,-1,0),this.scene);
+
+        //skybox
+        
+        var skybox = MeshBuilder.CreateBox("sky", {size: 1000}, this.scene);
+        //skybox.scaling = new Vector3(100, 100, 100);
         var skyMaterial = new StandardMaterial("sky", this.scene);
         skyMaterial.backFaceCulling = false;
         skyMaterial.disableLighting = true;
-        var skyTexture = new CubeTexture("textures/skybox/sky", this.scene);
+        var skyTexture = new CubeTexture("assets/skybox/skybox", this.scene);
         skyTexture.coordinatesMode = Texture.SKYBOX_MODE;
         skyMaterial.reflectionTexture = skyTexture;
         skybox.material =  skyMaterial;
         skybox.infiniteDistance = true;
+ 
 
-        assets.load();  
+        //load assets
+        var assetsManger = new AssetsManager(this.scene);
+
+        //add taks about mech been load in asserts
+        var worldTask = assetsManger.addMeshTask("world task","","assets/city_grid/","scene.gltf");
+        worldTask.onSuccess = (task) => {
+            worldTask.loadedMeshes[0].name = "world";
+            worldTask.loadedMeshes[0].position = new Vector3(-400,-4.05,300);
+            worldTask.loadedMeshes[0].scaling = new Vector3(10,10,-10);
+       
+            
+        }
+
+      
+        //do tasks
+        assetsManger.load();
+
+        //things after loading done
+        assetsManger.onFinish = (tasks) => {
+            //show debug layer
+            this.scene.debugLayer.show();
+        };
+        
+        
     }
 
     // Event handler for processing pointer selection events
     private processPointer(pointerInfo: PointerInfo)
     {
-        
+        switch (pointerInfo.type) {
+            case PointerEventTypes.POINTERDOWN:
+                if (pointerInfo.pickInfo?.hit) {
+                    console.log("selected mesh: " + pointerInfo.pickInfo.pickedMesh?.name + " at " + pointerInfo.pickInfo.pickedPoint);
+              
+                }
+                break;
+        }
     }
 
     // Event handler when controllers are added
@@ -130,7 +193,6 @@ class Game
     private onControllerRemoved(controller : WebXRInputSource) {
         console.log("controller removed: " + controller.pointer.name);
     }
-
 }
 /******* End of the Game class ******/   
 
