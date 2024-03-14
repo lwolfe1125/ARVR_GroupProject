@@ -1,8 +1,8 @@
 CSCI 4262 Project 
 
 Authors: 
-Jett Wolfe
-Rui Zheng 
+Jett Wolfe B00829345 
+Rui Zeng 
 
 Third Party Assets:
 
