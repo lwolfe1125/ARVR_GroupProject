@@ -15,9 +15,7 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader"
 import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector"
 import "@babylonjs/core/Physics/physicsEngineComponent"
-import * as Cannon from "cannon"
 import { AbstractMesh, AssetsManager, CannonJSPlugin, CubeTexture, DirectionalLight, HemisphericLight, HighlightLayer, Logger, Mesh, MeshBuilder, PhysicsImpostor, StandardMaterial, Texture } from "@babylonjs/core";
-
 
 class Game 
 { 
@@ -25,12 +23,6 @@ class Game
     private engine: Engine;
     private scene: Scene;
 
-
-    private rightGrabbedObject: AbstractMesh | null;
-    private grabbableObjects: Array<AbstractMesh>;
-    private hl_red: HighlightLayer;
-    private hl_green: HighlightLayer;
-    private currentMesh: AbstractMesh | null; 
     constructor()
     {
         // Get the canvas element 
@@ -41,14 +33,6 @@ class Game
 
         // Creates a basic Babylon Scene object
         this.scene = new Scene(this.engine);   
-
-        //initial controller with grab function
-  
-        this.rightGrabbedObject = null;
-        this.grabbableObjects = [];
-        this.hl_red = new HighlightLayer("hlr",this.scene);
-        this.hl_green = new HighlightLayer("hlg",this.scene);
-        this.currentMesh = null;
     }
 
     
@@ -112,20 +96,10 @@ class Game
             createGround: true,
             groundSize: 200,
             skyboxSize: 0
-            //skyboxColor: new Color3(0.059, 0.663, 0.8)
         });
-        
-        //physics
-        this.scene.enablePhysics(new Vector3(0,-8,0), new CannonJSPlugin(undefined,undefined, Cannon));
-        
-        //ground teleportation
-        xrHelper.teleportation.addFloorMesh(environment!.ground!);
-        environment!.ground!.isVisible = false;
-        environment!.ground!.position = new Vector3(0,0.2,0);
-        environment!.ground!.physicsImpostor = new PhysicsImpostor(environment!.ground!, PhysicsImpostor.BoxImpostor,
-            {mass:0, friction: 0.5, restitution: 0.7, ignoreParent: true},this.scene);
 
-
+        var assets = new AssetsManager(this.scene);
+    
         //create lights
         var light = new HemisphericLight("light", new Vector3(0,1,0),this.scene);
         light.intensity = 0.5;
@@ -133,9 +107,7 @@ class Game
         var sun = new DirectionalLight("theSun", new Vector3(0,-1,0),this.scene);
 
         //skybox
-        
         var skybox = MeshBuilder.CreateBox("sky", {size: 1000}, this.scene);
-        //skybox.scaling = new Vector3(100, 100, 100);
         var skyMaterial = new StandardMaterial("sky", this.scene);
         skyMaterial.backFaceCulling = false;
         skyMaterial.disableLighting = true;
@@ -153,6 +125,11 @@ class Game
             var city = cityTask.loadedMeshes[0];
             city.position = new Vector3(-3000, -60, -3000);
             city.scaling = new Vector3(100, 100, 100);
+
+            //Adding floor mesh for teleportation
+            cityTask.loadedMeshes.forEach(mesh => {
+                xrHelper.teleportation.addFloorMesh(mesh);
+            });
         }
 
         assets.load();  
