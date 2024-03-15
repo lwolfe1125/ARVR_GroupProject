@@ -71,8 +71,9 @@ class Game
     private async createScene()
     {
         // This creates and positions a first-person camera (non-mesh)
-        var camera = new UniversalCamera("camera1", new Vector3(0, 1.6, 0), this.scene);
+        var camera = new UniversalCamera("camera1", new Vector3(0, 0, 0), this.scene);
         camera.fov = 90 * Math.PI / 180;
+        camera.target = new Vector3(0.66, 0, 0.75)
 
         // This attaches the camera to the canvas
         camera.attachControl(this.canvas, true);
@@ -145,30 +146,16 @@ class Game
         skybox.infiniteDistance = true;
  
 
-        //load assets
-        var assetsManger = new AssetsManager(this.scene);
+        //Loading in the city
+        var cityTask = assets.addMeshTask("cityTask", "", "assets/city_grid/", "scene.gltf");
 
-        //add taks about mech been load in asserts
-        var worldTask = assetsManger.addMeshTask("world task","","assets/city_grid/","scene.gltf");
-        worldTask.onSuccess = (task) => {
-            worldTask.loadedMeshes[0].name = "world";
-            worldTask.loadedMeshes[0].position = new Vector3(-400,-4.05,300);
-            worldTask.loadedMeshes[0].scaling = new Vector3(10,10,-10);
-       
-            
+        cityTask.onSuccess = (task) => {
+            var city = cityTask.loadedMeshes[0];
+            city.position = new Vector3(-3000, -60, -3000);
+            city.scaling = new Vector3(100, 100, 100);
         }
 
-      
-        //do tasks
-        assetsManger.load();
-
-        //things after loading done
-        assetsManger.onFinish = (tasks) => {
-            //show debug layer
-            this.scene.debugLayer.show();
-        };
-        
-        
+        assets.load();  
     }
 
     // Event handler for processing pointer selection events
