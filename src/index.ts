@@ -62,9 +62,9 @@ class Game
     private async createScene()
     {
         // This creates and positions a first-person camera (non-mesh)
-        var camera = new UniversalCamera("camera1", new Vector3(0, 1, 0), this.scene);
+        var camera = new UniversalCamera("camera1", new Vector3(0, 0, 0), this.scene);
         camera.fov = 90 * Math.PI / 180;
-        
+        camera.target = new Vector3(0.66, 0, 0.75)
 
         // This attaches the camera to the canvas
         camera.attachControl(this.canvas, true);
@@ -114,6 +114,15 @@ class Game
         skyMaterial.reflectionTexture = skyTexture;
         skybox.material =  skyMaterial;
         skybox.infiniteDistance = true;
+
+        //Loading in the city
+        var cityTask = assets.addMeshTask("cityTask", "", "assets/city_grid/", "scene.gltf");
+
+        cityTask.onSuccess = (task) => {
+            var city = cityTask.loadedMeshes[0];
+            city.position = new Vector3(-3000, -60, -3000);
+            city.scaling = new Vector3(100, 100, 100);
+        }
 
         assets.load();  
     }
