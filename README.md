@@ -22,6 +22,8 @@ Third Party Assets:
 "Skybox Texture" by Joenecia 
 https://www.cleanpng.com/png-skybox-texture-mapping-cube-mapping-desktop-wallpa-6020000/ 
 
+"The tablet" (https://skfb.ly/ooXJX) by TatariN_174 is licensed under Creative Commons Attribution-NonCommercial (http://creativecommons.org/licenses/by-nc/4.0/).
+
 ## License
 
 Material for this assignment was created by E.S. Rosenberg and is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
