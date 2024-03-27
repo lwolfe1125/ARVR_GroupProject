@@ -15,13 +15,15 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader"
 import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector"
 import "@babylonjs/core/Physics/physicsEngineComponent"
-import { AbstractMesh, AssetsManager, CannonJSPlugin, CubeTexture, DirectionalLight, HemisphericLight, HighlightLayer, Logger, Mesh, MeshBuilder, PhysicsImpostor, SceneLoader, StandardMaterial, Texture } from "@babylonjs/core";
+import { AbstractMesh, AssetsManager, CannonJSPlugin, CubeTexture, DirectionalLight, HemisphericLight, HighlightLayer, Logger, Material, Mesh, MeshBuilder, PhysicsImpostor, SceneLoader, StandardMaterial, Texture } from "@babylonjs/core";
 
 class Game 
 { 
     private canvas: HTMLCanvasElement;
     private engine: Engine;
     private scene: Scene;
+
+    private visibility : number;
 
     constructor()
     {
@@ -33,6 +35,8 @@ class Game
 
         // Creates a basic Babylon Scene object
         this.scene = new Scene(this.engine);   
+
+        this.visibility = 0;
     }
 
     
@@ -156,6 +160,11 @@ class Game
 
         //Attaching the tablet to the left hand of the player 
         if(controller.uniqueId.endsWith("left")){
+            //Loading in the map texture 
+            var mapMaterial = new StandardMaterial("map", this.scene);
+            var mapText = new Texture("assets/mini_map.jpg", this.scene);
+            mapMaterial.diffuseTexture = mapText;
+
             //Loading in the tablet 
             SceneLoader.ImportMesh("", "assets/tablet/", "scene.gltf", this.scene, (meshes)=>{
                 meshes[0].scaling = new Vector3(0.2, 0.2, 0.2);
@@ -163,7 +172,20 @@ class Game
                 meshes[0].position = Vector3.ZeroReadOnly;
                 meshes[0].locallyTranslate(new Vector3(-2, 0, 0));
                 meshes[0].rotation = new Vector3(-0.5, 3.1415, 0);
+                meshes[0].name = "tablet";
+
+                //Set the tablet's visibility
+                //meshes[0].visibility = this.visibility;
+
+                meshes.forEach(mesh => {
+                    if(mesh.name.endsWith("10")){
+                        mesh.material = mapMaterial;
+                    }
+                }); 
             });
+
+            //Applying the map as a texture over the screen 
+
         }
     }
 
