@@ -25,6 +25,8 @@ class Game
 
     private visibility : number;
 
+    private leftCon : WebXRInputSource | null;
+
     constructor()
     {
         // Get the canvas element 
@@ -37,6 +39,8 @@ class Game
         this.scene = new Scene(this.engine);   
 
         this.visibility = 0;
+
+        this.leftCon = null;
     }
 
     
@@ -45,7 +49,7 @@ class Game
         this.createScene().then(() => {
             // Register a render loop to repeatedly render the scene
             this.engine.runRenderLoop(() => { 
-                //this.update();
+                this.controllerInput();
                 this.scene.render();
             });
 
@@ -85,6 +89,9 @@ class Game
 
         // Register event handler when controllers are added
         xrHelper.input.onControllerAddedObservable.add((controller) => {
+            if(controller.uniqueId.endsWith("left")){
+                this.leftCon = controller;
+            }
             this.onControllerAdded(controller);
         });
 
@@ -137,8 +144,6 @@ class Game
         }
 
         assets.load();  
-
-        this.scene.debugLayer.show();
     }
 
     // Event handler for processing pointer selection events
@@ -156,10 +161,12 @@ class Game
 
     // Event handler when controllers are added
     private onControllerAdded(controller : WebXRInputSource) {
-        console.log("controller added: " + controller.pointer.name);
+        console.log("controller added: " + controller.uniqueId);
 
         //Attaching the tablet to the left hand of the player 
         if(controller.uniqueId.endsWith("left")){
+            this.leftCon = controller;
+            
             //Loading in the map texture 
             var mapMaterial = new StandardMaterial("map", this.scene);
             var mapText = new Texture("assets/mini_map.jpg", this.scene);
@@ -174,24 +181,40 @@ class Game
                 meshes[0].rotation = new Vector3(-0.5, 3.1415, 0);
                 meshes[0].name = "tablet";
 
-                //Set the tablet's visibility
-                //meshes[0].visibility = this.visibility;
+                //Disable the mesh
+                //meshes[0].setEnabled(false);
 
+                //Applying the map as a texture over the screen
                 meshes.forEach(mesh => {
                     if(mesh.name.endsWith("10")){
                         mesh.material = mapMaterial;
                     }
                 }); 
             });
-
-            //Applying the map as a texture over the screen 
-
         }
     }
 
     // Event handler when controllers are removed
     private onControllerRemoved(controller : WebXRInputSource) {
         console.log("controller removed: " + controller.pointer.name);
+    }
+
+    private controllerInput() : void {
+        //Left squeeze
+        this.onLeftSqueeze(this.leftCon?.motionController?.getComponent("xr-standard-squeeze"));
+    }
+
+    //Event handler when left button is squeezed 
+    private onLeftSqueeze(component? : WebXRControllerComponent)
+    {
+        if(component?.changes.pressed){
+            if(component.pressed){
+                console.log("Left squeeze active");
+            }
+            else{
+                console.log("Left squeeze released");
+            }
+        }
     }
 }
 /******* End of the Game class ******/   
