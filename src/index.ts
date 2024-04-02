@@ -23,8 +23,6 @@ class Game
     private engine: Engine;
     private scene: Scene;
 
-    private visibility : number;
-
     private leftCon : WebXRInputSource | null;
 
     constructor()
@@ -38,8 +36,6 @@ class Game
         // Creates a basic Babylon Scene object
         this.scene = new Scene(this.engine);   
 
-        this.visibility = 0;
-
         this.leftCon = null;
     }
 
@@ -49,7 +45,7 @@ class Game
         this.createScene().then(() => {
             // Register a render loop to repeatedly render the scene
             this.engine.runRenderLoop(() => { 
-                this.controllerInput();
+                this.update();
                 this.scene.render();
             });
 
@@ -82,16 +78,26 @@ class Game
         // This is a hacky workaround that disables a different unused feature instead
         xrHelper.teleportation.setSelectionFeature(xrHelper.baseExperience.featuresManager.getEnabledFeature("xr-background-remover"));
 
-        // Register event handler for selection events (pulling the trigger, clicking the mouse button)
-        this.scene.onPointerObservable.add((pointerInfo) => {
-            this.processPointer(pointerInfo);
-        });
-
         // Register event handler when controllers are added
         xrHelper.input.onControllerAddedObservable.add((controller) => {
             if(controller.uniqueId.endsWith("left")){
                 this.leftCon = controller;
+                
+                //Loading in the tablet 
+                SceneLoader.ImportMesh("", "assets/tablet/", "scene.gltf", this.scene, (meshes)=>{
+                    meshes[0].scaling = new Vector3(0.2, 0.2, 0.2);
+                    meshes[0].setParent(this.leftCon?.grip!);
+                    meshes[0].position = Vector3.ZeroReadOnly;
+                    meshes[0].locallyTranslate(new Vector3(-2, 0, 0));
+                    meshes[0].rotation = new Vector3(-0.5, 3.1415, 0);
+                    meshes[0].name = "tablet";
+
+                    //Disable the mesh
+                    //meshes[0].setEnabled(false);
+
+                });
             }
+
             this.onControllerAdded(controller);
         });
 
@@ -104,9 +110,8 @@ class Game
        
         //create a ground
         const environment = this.scene.createDefaultEnvironment({
-            createGround: true,
-            groundSize: 200,
-            skyboxSize: 0
+            createGround: false,
+            createSkybox: false
         });
 
         var assets = new AssetsManager(this.scene);
@@ -143,55 +148,28 @@ class Game
             });
         }
 
+        //Load in the direction pointer
+        var pointerTask = assets.addMeshTask("pointerTask", "", "assets/arrow/", "scene.gltf");
+
+        pointerTask.onSuccess = (task) => {
+            var arrow = pointerTask.loadedMeshes[0];
+            arrow.scaling = new Vector3(0.03, 0.03, 0.03);
+            arrow.position = new Vector3(8, -5, 8);
+            arrow.rotation = new Vector3(0, 5.25, 0.175);
+        }
+
         assets.load();  
+
+        this.scene.debugLayer.show();
     }
 
-    // Event handler for processing pointer selection events
-    private processPointer(pointerInfo: PointerInfo)
-    {
-        switch (pointerInfo.type) {
-            case PointerEventTypes.POINTERDOWN:
-                if (pointerInfo.pickInfo?.hit) {
-                    console.log("selected mesh: " + pointerInfo.pickInfo.pickedMesh?.name + " at " + pointerInfo.pickInfo.pickedPoint);
-              
-                }
-                break;
-        }
+    private update() : void{
+        this.controllerInput();
     }
 
     // Event handler when controllers are added
     private onControllerAdded(controller : WebXRInputSource) {
         console.log("controller added: " + controller.uniqueId);
-
-        //Attaching the tablet to the left hand of the player 
-        if(controller.uniqueId.endsWith("left")){
-            this.leftCon = controller;
-            
-            //Loading in the map texture 
-            var mapMaterial = new StandardMaterial("map", this.scene);
-            var mapText = new Texture("assets/mini_map.jpg", this.scene);
-            mapMaterial.diffuseTexture = mapText;
-
-            //Loading in the tablet 
-            SceneLoader.ImportMesh("", "assets/tablet/", "scene.gltf", this.scene, (meshes)=>{
-                meshes[0].scaling = new Vector3(0.2, 0.2, 0.2);
-                meshes[0].setParent(controller.grip!);
-                meshes[0].position = Vector3.ZeroReadOnly;
-                meshes[0].locallyTranslate(new Vector3(-2, 0, 0));
-                meshes[0].rotation = new Vector3(-0.5, 3.1415, 0);
-                meshes[0].name = "tablet";
-
-                //Disable the mesh
-                //meshes[0].setEnabled(false);
-
-                //Applying the map as a texture over the screen
-                meshes.forEach(mesh => {
-                    if(mesh.name.endsWith("10")){
-                        mesh.material = mapMaterial;
-                    }
-                }); 
-            });
-        }
     }
 
     // Event handler when controllers are removed
@@ -208,12 +186,9 @@ class Game
     private onLeftSqueeze(component? : WebXRControllerComponent)
     {
         if(component?.changes.pressed){
-            if(component.pressed){
-                console.log("Left squeeze active");
-            }
-            else{
-                console.log("Left squeeze released");
-            }
+            if(component.pressed) console.log("Left squeeze pressed");
+
+            else console.log("Left squeeze released");
         }
     }
 }
