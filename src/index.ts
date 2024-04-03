@@ -154,9 +154,9 @@ class Game
         pointerTask.onSuccess = (task) => {
             var arrow = pointerTask.loadedMeshes[0];
             arrow.scaling = new Vector3(0.03, 0.03, 0.03);
-            arrow.position = new Vector3(8, -5, 6);
             arrow.rotation = new Vector3(0, 5.25, 0.175);
             arrow.setParent(camera);
+            arrow.position = new Vector3(0.5, -4, 6);
         }
 
         assets.load();  
