@@ -93,7 +93,7 @@ class Game
                     meshes[0].name = "tablet";
 
                     //Disable the mesh
-                    //meshes[0].setEnabled(false);
+                    meshes[0].setEnabled(false);
 
                 });
             }
@@ -154,8 +154,9 @@ class Game
         pointerTask.onSuccess = (task) => {
             var arrow = pointerTask.loadedMeshes[0];
             arrow.scaling = new Vector3(0.03, 0.03, 0.03);
-            arrow.position = new Vector3(8, -5, 8);
+            arrow.position = new Vector3(8, -5, 6);
             arrow.rotation = new Vector3(0, 5.25, 0.175);
+            arrow.setParent(camera);
         }
 
         assets.load();  
@@ -186,9 +187,14 @@ class Game
     private onLeftSqueeze(component? : WebXRControllerComponent)
     {
         if(component?.changes.pressed){
-            if(component.pressed) console.log("Left squeeze pressed");
-
-            else console.log("Left squeeze released");
+            if(component.pressed) {
+                console.log("Left squeeze pressed");
+                this.scene.getMeshByName("tablet")?.setEnabled(true);
+            }    
+            else {
+                this.scene.getMeshByName("tablet")?.setEnabled(false);
+                console.log("Left squeeze released");
+            } 
         }
     }
 }
