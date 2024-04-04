@@ -93,7 +93,7 @@ class Game
                     meshes[0].name = "tablet";
 
                     //Disable the mesh
-                    //meshes[0].setEnabled(false);
+                    meshes[0].setEnabled(false);
 
                 });
             }
@@ -242,14 +242,16 @@ class Game
     private onLeftSqueeze(component? : WebXRControllerComponent)
     {
         if(component?.changes.pressed){
-            if(component.pressed) console.log("Left squeeze pressed");
-
-            else console.log("Left squeeze released");
+            if(component.pressed) {
+                console.log("Left squeeze pressed");
+                this.scene.getMeshByName("tablet")?.setEnabled(true);
+            }    
+            else {
+                this.scene.getMeshByName("tablet")?.setEnabled(false);
+                console.log("Left squeeze released");
+            } 
         }
     }
-
-
-
 }
 /******* End of the Game class ******/   
 
