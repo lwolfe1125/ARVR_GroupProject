@@ -7,7 +7,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
 import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { PointerEventTypes, PointerInfo } from "@babylonjs/core/Events/pointerEvents";
-import { WebXRControllerComponent, WebXRManagedOutputCanvasOptions } from "@babylonjs/core/XR";
+import { WebXRCamera, WebXRControllerComponent, WebXRManagedOutputCanvasOptions } from "@babylonjs/core/XR";
 import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
 
 // Side effects
@@ -15,7 +15,7 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader"
 import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector"
 import "@babylonjs/core/Physics/physicsEngineComponent"
-import { AbstractMesh, AssetsManager, CannonJSPlugin, CubeTexture, DirectionalLight, HemisphericLight, HighlightLayer, Logger, Material, Mesh, MeshBuilder, PhysicsImpostor, SceneLoader, StandardMaterial, Texture } from "@babylonjs/core";
+import { AbstractMesh, AssetsManager, CannonJSPlugin, CreateCylinder, CubeTexture, DirectionalLight, HemisphericLight, HighlightLayer, Logger, Material, Mesh, MeshBuilder, PBRMaterial, PhysicsImpostor, SceneLoader, StandardMaterial, Texture } from "@babylonjs/core";
 
 class Game 
 { 
@@ -23,7 +23,7 @@ class Game
     private engine: Engine;
     private scene: Scene;
 
-    private visibility : number;
+    private leftCon : WebXRInputSource | null;
 
     constructor()
     {
@@ -36,7 +36,7 @@ class Game
         // Creates a basic Babylon Scene object
         this.scene = new Scene(this.engine);   
 
-        this.visibility = 0;
+        this.leftCon = null;
     }
 
     
@@ -45,7 +45,7 @@ class Game
         this.createScene().then(() => {
             // Register a render loop to repeatedly render the scene
             this.engine.runRenderLoop(() => { 
-                //this.update();
+                this.update();
                 this.scene.render();
             });
 
@@ -78,13 +78,26 @@ class Game
         // This is a hacky workaround that disables a different unused feature instead
         xrHelper.teleportation.setSelectionFeature(xrHelper.baseExperience.featuresManager.getEnabledFeature("xr-background-remover"));
 
-        // Register event handler for selection events (pulling the trigger, clicking the mouse button)
-        this.scene.onPointerObservable.add((pointerInfo) => {
-            this.processPointer(pointerInfo);
-        });
-
         // Register event handler when controllers are added
         xrHelper.input.onControllerAddedObservable.add((controller) => {
+            if(controller.uniqueId.endsWith("left")){
+                this.leftCon = controller;
+                
+                //Loading in the tablet 
+                SceneLoader.ImportMesh("", "assets/tablet/", "tablet2.glb", this.scene, (meshes)=>{
+                    meshes[0].scaling = new Vector3(0.2, 0.2, 0.2);
+                    meshes[0].setParent(this.leftCon?.grip!);
+                    meshes[0].position = Vector3.ZeroReadOnly;
+                    meshes[0].locallyTranslate(new Vector3(-2, 0, 0));
+                    meshes[0].rotation = new Vector3(-0.5, 3.1415, 0);
+                    meshes[0].name = "tablet";
+
+                    //Disable the mesh
+                    //meshes[0].setEnabled(false);
+
+                });
+            }
+
             this.onControllerAdded(controller);
         });
 
@@ -92,14 +105,67 @@ class Game
         xrHelper.input.onControllerRemovedObservable.add((controller) => {
             this.onControllerRemoved(controller);
         });
+            //add texture
+        var hdrTexture = CubeTexture.CreateFromPrefilteredData("textures/environment.dds", this.scene);
+        var beacontext = new PBRMaterial("beaconS", this.scene);
+        beacontext.reflectionTexture = hdrTexture;
+        beacontext.microSurface = 0.96;
+        beacontext.albedoColor = Color3.Red();
+        beacontext.reflectivityColor = new Color3(0.003, 0.003, 0.003);
+
+        //beacon attributes
+        var currentBeacon = 0;
+        var beaconlist= [
+            {xpos : 97.0, zpos : 106.0},
+            {xpos : - 61.7, zpos : 253.7},
+            {xpos : 158.9, zpos : 167.9},
+            {xpos : 167.5, zpos : -96.9}
+        ]
+        
+        // Add the highlight layer.
+        const hl = new HighlightLayer("hlbeacon", this.scene);
+        //create beacons
+        var beacons: { isVisible: boolean; }[] = [];
+        for(var i =0; i<beaconlist.length; i++){
+            var beacon = CreateCylinder("beacon"+i, {height:1500,diameter:4},this.scene);
+            beacon.position.x = beaconlist[i].xpos;
+            beacon.position.z = beaconlist[i].zpos;
+            beacon.material = beacontext;
+            beacon.isVisible = false;
+            hl.addMesh(beacon, Color3.Yellow());
+            beacons.push(beacon);
+        }
+        //show current beacon when select tablet
+        this.scene.onPointerDown = (evt, pickInfo) => {
+            if (pickInfo.hit){
+                //hit the tablet => show the beacon lead to the target
+                console.log("selected mesh: " + pickInfo.pickedMesh?.name + " at " + pickInfo.pickedPoint);
+                if(pickInfo.pickedMesh?.name == "Object_10_primitive1"){
+                    beacons[currentBeacon].isVisible = true;
+                }
+                else if(pickInfo.pickedMesh?.name == "beacon" + currentBeacon){
+                    //get the xrcamera position and compare with beacons, if close enough, then the beacon is able to be deleted
+                    var xr_Cx = xrHelper.baseExperience.camera.position.x;
+                    var xr_Cz = xrHelper.baseExperience.camera.position.z;
+                    var diffx = Math.abs(xr_Cx-beaconlist[currentBeacon].xpos);
+                    var diffz = Math.abs(xr_Cz-beaconlist[currentBeacon].zpos);
+                    if(diffx <= 10 && diffz <= 10){
+                        beacons[currentBeacon].isVisible = false;
+                        //able to loop the beacon
+                        currentBeacon = (currentBeacon+1)%4;
+                        
+                    }
+                }
+            }
+            
+       }
 
     // Add code to create your scene here
        
         //create a ground
         const environment = this.scene.createDefaultEnvironment({
-            createGround: true,
-            groundSize: 200,
-            skyboxSize: 0
+            createGround: false,
+            createSkybox: false
         });
 
         var assets = new AssetsManager(this.scene);
@@ -127,8 +193,8 @@ class Game
 
         cityTask.onSuccess = (task) => {
             var city = cityTask.loadedMeshes[0];
-            city.position = new Vector3(-3000, -60, -3000);
-            city.scaling = new Vector3(100, 100, 100);
+            city.position = new Vector3(-300, -5, -300);
+            city.scaling = new Vector3(10, 10, 10);
 
             //Adding floor mesh for teleportation
             cityTask.loadedMeshes.forEach(mesh => {
@@ -136,63 +202,54 @@ class Game
             });
         }
 
+        //Load in the direction pointer
+        var pointerTask = assets.addMeshTask("pointerTask", "", "assets/arrow/", "scene.gltf");
+
+        pointerTask.onSuccess = (task) => {
+            var arrow = pointerTask.loadedMeshes[0];
+            arrow.scaling = new Vector3(0.03, 0.03, 0.03);
+            arrow.rotation = new Vector3(0, 5.25, 0.175);
+            //the parent set to be in webxr camera !!
+            arrow.setParent(xrHelper.baseExperience.camera);
+            arrow.position = new Vector3(0.5, -1, 6);
+        }
+
         assets.load();  
 
         this.scene.debugLayer.show();
     }
 
-    // Event handler for processing pointer selection events
-    private processPointer(pointerInfo: PointerInfo)
-    {
-        switch (pointerInfo.type) {
-            case PointerEventTypes.POINTERDOWN:
-                if (pointerInfo.pickInfo?.hit) {
-                    console.log("selected mesh: " + pointerInfo.pickInfo.pickedMesh?.name + " at " + pointerInfo.pickInfo.pickedPoint);
-              
-                }
-                break;
-        }
+    private update() : void{
+        this.controllerInput();
     }
 
     // Event handler when controllers are added
     private onControllerAdded(controller : WebXRInputSource) {
-        console.log("controller added: " + controller.pointer.name);
-
-        //Attaching the tablet to the left hand of the player 
-        if(controller.uniqueId.endsWith("left")){
-            //Loading in the map texture 
-            var mapMaterial = new StandardMaterial("map", this.scene);
-            var mapText = new Texture("assets/mini_map.jpg", this.scene);
-            mapMaterial.diffuseTexture = mapText;
-
-            //Loading in the tablet 
-            SceneLoader.ImportMesh("", "assets/tablet/", "scene.gltf", this.scene, (meshes)=>{
-                meshes[0].scaling = new Vector3(0.2, 0.2, 0.2);
-                meshes[0].setParent(controller.grip!);
-                meshes[0].position = Vector3.ZeroReadOnly;
-                meshes[0].locallyTranslate(new Vector3(-2, 0, 0));
-                meshes[0].rotation = new Vector3(-0.5, 3.1415, 0);
-                meshes[0].name = "tablet";
-
-                //Set the tablet's visibility
-                //meshes[0].visibility = this.visibility;
-
-                meshes.forEach(mesh => {
-                    if(mesh.name.endsWith("10")){
-                        mesh.material = mapMaterial;
-                    }
-                }); 
-            });
-
-            //Applying the map as a texture over the screen 
-
-        }
+        console.log("controller added: " + controller.uniqueId);
     }
 
     // Event handler when controllers are removed
     private onControllerRemoved(controller : WebXRInputSource) {
         console.log("controller removed: " + controller.pointer.name);
     }
+
+    private controllerInput() : void {
+        //Left squeeze
+        this.onLeftSqueeze(this.leftCon?.motionController?.getComponent("xr-standard-squeeze"));
+    }
+
+    //Event handler when left button is squeezed 
+    private onLeftSqueeze(component? : WebXRControllerComponent)
+    {
+        if(component?.changes.pressed){
+            if(component.pressed) console.log("Left squeeze pressed");
+
+            else console.log("Left squeeze released");
+        }
+    }
+
+
+
 }
 /******* End of the Game class ******/   
 
