@@ -1,6 +1,6 @@
-# Milestone 2
+# Milestone 3
 
-**Due: Friday, March 14th, 11:59pm Atlantic Time**
+**Due: Friday, Aprial 5th, 11:59pm Atlantic Time**
 
 current target:
 
@@ -24,6 +24,9 @@ https://www.cleanpng.com/png-skybox-texture-mapping-cube-mapping-desktop-wallpa-
 
 "The tablet" (https://skfb.ly/ooXJX) by TatariN_174 is licensed under Creative Commons Attribution-NonCommercial (http://creativecommons.org/licenses/by-nc/4.0/).
 
+"arrow point pendant" (https://skfb.ly/6Ty9o) by heavy9 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+"dirction arrow" (https://sketchfab.com/3d-models/direction-arrow-6ef46718c7b242e39fcad7f27ee858a5) by Alihan is licensed under Creative Commons Attribution (https://creativecommons.org/licenses/by/4.0/)
 ## License
 
 Material for this assignment was created by E.S. Rosenberg and is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
