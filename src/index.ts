@@ -93,7 +93,7 @@ class Game
                     meshes[0].name = "tablet";
 
                     //Disable the mesh
-                    meshes[0].setEnabled(false);
+                    //meshes[0].setEnabled(false);
 
                 });
             }
@@ -105,7 +105,7 @@ class Game
         xrHelper.input.onControllerRemovedObservable.add((controller) => {
             this.onControllerRemoved(controller);
         });
-            //add texture
+
         var hdrTexture = CubeTexture.CreateFromPrefilteredData("textures/environment.dds", this.scene);
         var beacontext = new PBRMaterial("beaconS", this.scene);
         beacontext.reflectionTexture = hdrTexture;
@@ -113,6 +113,8 @@ class Game
         beacontext.albedoColor = Color3.Red();
         beacontext.reflectivityColor = new Color3(0.003, 0.003, 0.003);
 
+        //get webxrcamera
+      
         //beacon attributes
         var currentBeacon = 0;
         var beaconlist= [
@@ -121,11 +123,10 @@ class Game
             {xpos : 158.9, zpos : 167.9},
             {xpos : 167.5, zpos : -96.9}
         ]
-        
+        var beacons: { isVisible: boolean; }[] = [];
         // Add the highlight layer.
         const hl = new HighlightLayer("hlbeacon", this.scene);
-        //create beacons
-        var beacons: { isVisible: boolean; }[] = [];
+        
         for(var i =0; i<beaconlist.length; i++){
             var beacon = CreateCylinder("beacon"+i, {height:1500,diameter:4},this.scene);
             beacon.position.x = beaconlist[i].xpos;
@@ -203,19 +204,32 @@ class Game
         }
 
         //Load in the direction pointer
-        var pointerTask = assets.addMeshTask("pointerTask", "", "assets/arrow/", "scene.gltf");
+        var pointerTask = assets.addMeshTask("pointerTask", "", "assets/arrow/direction_arrow/", "dirarrow.glb");
 
         pointerTask.onSuccess = (task) => {
             var arrow = pointerTask.loadedMeshes[0];
-            arrow.scaling = new Vector3(0.03, 0.03, 0.03);
-            arrow.rotation = new Vector3(0, 5.25, 0.175);
-            //the parent set to be in webxr camera !!
+            arrow.scaling = new Vector3(1, 1, 1);
+            arrow.rotation = new Vector3(0, 0, 0);
+            
             arrow.setParent(xrHelper.baseExperience.camera);
             arrow.position = new Vector3(0.5, -1, 6);
         }
-
+       
         assets.load();  
 
+        //point to current beacon
+        this.scene.onBeforeRenderObservable.add(()=>{
+            var beaconP = new Vector3(beaconlist[currentBeacon].xpos,0,beaconlist[currentBeacon].zpos);
+            const diffPosition = Vector3.TransformCoordinates(beaconP, xrHelper.baseExperience.camera.getViewMatrix());
+            let angle = Math.atan2(diffPosition.x, diffPosition.z);
+            if (angle < 0)
+                angle = Math.abs(angle);
+            else
+                angle = 2 * Math.PI - angle;
+
+            var arrow = pointerTask.loadedMeshes[0];
+            arrow.rotation.y = -angle ;
+        });
         this.scene.debugLayer.show();
     }
 
@@ -242,16 +256,14 @@ class Game
     private onLeftSqueeze(component? : WebXRControllerComponent)
     {
         if(component?.changes.pressed){
-            if(component.pressed) {
-                console.log("Left squeeze pressed");
-                this.scene.getMeshByName("tablet")?.setEnabled(true);
-            }    
-            else {
-                this.scene.getMeshByName("tablet")?.setEnabled(false);
-                console.log("Left squeeze released");
-            } 
+            if(component.pressed) console.log("Left squeeze pressed");
+
+            else console.log("Left squeeze released");
         }
     }
+
+
+
 }
 /******* End of the Game class ******/   
 
