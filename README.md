@@ -1,21 +1,8 @@
-# Milestone 3
+## Development Information
 
-**Due: Friday, Aprial 5th, 11:59pm Atlantic Time**
+Developed by Jett Wolfe & Rui Zeng
 
-current target:
-
-Create a basic teleportable map and tested in Quest
-
-## Submission Information
-
-
-Name: Jett Wolfe , Rui Zeng
-
-Dal Email: lwolfe@dal.ca , rz742949@dal.ca
-
-Git URL: https://git.cs.dal.ca/lwolfe/ar_vr-project.git
-
-Third Party Assets:
+## Third Party Assets
 
 "City Grid Block" (https://skfb.ly/onMzQ) by antoniojmonteiro is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
@@ -27,6 +14,7 @@ https://www.cleanpng.com/png-skybox-texture-mapping-cube-mapping-desktop-wallpa-
 "arrow point pendant" (https://skfb.ly/6Ty9o) by heavy9 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
 "dirction arrow" (https://sketchfab.com/3d-models/direction-arrow-6ef46718c7b242e39fcad7f27ee858a5) by Alihan is licensed under Creative Commons Attribution (https://creativecommons.org/licenses/by/4.0/)
+
 ## License
 
 Material for this assignment was created by E.S. Rosenberg and is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
